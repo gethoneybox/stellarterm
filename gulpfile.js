@@ -35,30 +35,17 @@ gulp.task('styles', () => gulp.src('./src/styles/**/*.scss')
 // Images (For big images that get turned into base64)
 gulp.task('images', (cb) => {
     let file = 'let images = {\n';
-    const addImage = (name, extension) => {
-        // Known to support jpg, png, gif. Supports others if mime type matches extension
-        let mimeType = extension;
-        if (extension === 'jpg') {
-            mimeType = 'jpeg';
-        }
 
-        const image = fs.readFileSync(`./images/${name}.${extension}`);
-        const b64 = new Buffer(image).toString('base64');
-        file += `  '${name}': 'data:image/${mimeType};base64, ${b64}',\n`;
-    };
+    fs.readdirSync('./images/').forEach((imgFile) => {
+        const imageObj = {
+            name: imgFile.split('.')[0],
+            ext: imgFile.split('.').pop(),
+        };
 
-
-    addImage('ledger-app', 'png');
-    addImage('ledger-nano-picture', 'jpg');
-    addImage('ledger-nano-s-buttons', 'png');
-    addImage('ledger-logo', 'png');
-    addImage('switch', 'png');
-    addImage('dropdown', 'png');
-    addImage('sign-vault', 'png');
-    addImage('sign-stellarguard', 'png');
-    addImage('sign-unknown', 'png');
-    addImage('icon-copy', 'png');
-
+        const mimeType = imageObj.ext === 'jpg' ? 'jpeg' : imageObj.ext;
+        const b64 = new Buffer(fs.readFileSync(`./images/${imgFile}`)).toString('base64');
+        file += `  '${imageObj.name}': 'data:image/${mimeType};base64, ${b64}',\n`;
+    });
 
     file += '};\nmodule.exports = images;';
     fs.writeFile('./src/images.js', file, cb);
