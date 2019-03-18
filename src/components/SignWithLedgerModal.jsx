@@ -21,11 +21,60 @@ export default class GlobalModal extends React.Component {
     }
 
     componentDidMount() {
+        this.sendTransactionToLedger();
+    }
+
+    componentWillUnmount() {
+        this.unsubModal();
+        this.unsubSession();
+    }
+
+    getTransactionStatus() {
+        const d = this.props.d;
+        console.log(this.state);
+
+        const { error, result } = this.state;
+        const waitingForConfirm = error === undefined && result === undefined;
+
+        return (
+            <div className="LedgerPopup_footer">
+                <div className="Footer_transaction">
+                    <img src={images['icon-circle-preloader-gif']} alt="preloader" />
+                    {result ? <span>Waiting for Horizon answer</span> : <span>Waiting for your confirmation</span>}
+                </div>
+
+                <div className="Action_buttons">
+                    {waitingForConfirm ? (
+                        <button
+                            className="btn_cancel"
+                            onClick={() => {
+                                d.modal.handlers.cancel();
+                            }}>
+                            Cancel
+                        </button>
+                    ) : null}
+
+                    {error ? (
+                        <button className="s-button" onClick={this.sendTransactionToLedger()}>
+                            <span>
+                                <img src={images['icon-circle-retry']} alt="preloader" /> Retry
+                            </span>
+                        </button>
+                    ) : null}
+                </div>
+            </div>
+        );
+    }
+
+    sendTransactionToLedger() {
         const d = this.props.d;
 
         d.session.account
             .signWithLedger(d.modal.inputData)
             .then((result) => {
+                this.setState({
+                    result,
+                });
                 d.modal.handlers.finish(result);
             })
             .catch((error) => {
@@ -39,63 +88,21 @@ export default class GlobalModal extends React.Component {
             });
     }
 
-    componentWillUnmount() {
-        this.unsubModal();
-        this.unsubSession();
-    }
-
     render() {
         const d = this.props.d;
-        if (this.state.error) {
-            return (
-                <div className="GlobalModal">
-                    <div className="GlobalModal__header">Transaction signing failed</div>
-                    <div className="GlobalModal__content">
-                        The transaction could not be signed. Try restarting your Ledger and refreshing this webpage.
-                        <br />
-                        Error: {this.state.error}
-                    </div>
-
-                    <div className="GlobalModal__navigation">
-                        <button
-                            className="s-button s-button--light"
-                            onClick={() => {
-                                d.modal.handlers.cancel();
-                            }}>
-                            OK
-                        </button>
-                    </div>
-                </div>
-            );
-        }
 
         return (
             <div className="GlobalModal">
                 <div className="GlobalModal__header">Sign transaction with your Ledger</div>
 
-                <div className="GlobalModal__content">
-                    <img
-                        src={images['ledger-logo']}
-                        className="img--noSelect"
-                        alt="Ledger Logo"
-                        width="150"
-                        height="40" />
+                <div className="LedgerPopup">
+                    <div className="LedgerPopup_header">
+                        <img src={images['ledger-logo']} className="img--noSelect" alt="Ledger Logo" />
+                        <p>Confirm transaction on your Ledger device</p>
+                    </div>
                     <TransactionSummary tx={d.modal.inputData} />
-                </div>
 
-                <div className="GlobalModal__content">
-                    Action required: <strong>Confirm transaction</strong> on your Ledger device. ✔<br />
-                </div>
-
-                <div className="GlobalModal__navigation">
-                    <button
-                        className="s-button s-button--light"
-                        onClick={() => {
-                            d.modal.handlers.cancel();
-                        }}>
-                        Cancel
-                    </button>
-                    <span>Waiting for your confirmation</span>
+                    {this.getTransactionStatus()}
                 </div>
             </div>
         );

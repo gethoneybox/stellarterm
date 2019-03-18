@@ -40,8 +40,8 @@ export default function Modal() {
         },
 
         finish: (output) => {
-            this.active = false;
-            this.modalName = '';
+            this.active = true;
+            // this.modalName = '';
             this.activeResolver({
                 status: 'finish',
                 output,

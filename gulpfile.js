@@ -58,6 +58,11 @@ gulp.task('images', (cb) => {
     addImage('sign-stellarguard', 'png');
     addImage('sign-unknown', 'png');
     addImage('icon-copy', 'png');
+    addImage('icon-circle-fail', 'png');
+    addImage('icon-circle-retry', 'png');
+    addImage('icon-circle-success', 'png');
+    addImage('icon-circle-preloader', 'png');
+    addImage('icon-circle-preloader-gif', 'gif');
 
 
     file += '};\nmodule.exports = images;';
