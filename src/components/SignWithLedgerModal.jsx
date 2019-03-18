@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import TransactionSummary from './TransactionSummary';
+import TransactionDetails from './TransactionDetails';
 import images from '../images';
 import Driver from '../lib/Driver';
 
@@ -100,7 +100,7 @@ export default class GlobalModal extends React.Component {
                         <img src={images['ledger-logo']} className="img--noSelect" alt="Ledger Logo" />
                         <p>Confirm transaction on your Ledger device</p>
                     </div>
-                    <TransactionSummary tx={d.modal.inputData} />
+                    <TransactionDetails tx={d.modal.inputData} />
 
                     {this.getTransactionStatus()}
                 </div>
