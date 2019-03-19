@@ -62,7 +62,12 @@ export default function AssetCard2(props) {
         borderStyle = { border: 'none' };
     }
 
-    return (
+    return props.inRow ? (
+        <div className="AssetRow">
+            <img className="Row_logo" src={anchor.logo} alt={anchor.name} />
+            <span>{`${asset.code} — ${asset.domain}`}</span>
+        </div>
+    ) : (
         <div className={assetCardClass} style={borderStyle}>
             <AssetCardMain
                 backgroundStyle={backgroundStyle}
@@ -87,4 +92,5 @@ AssetCard2.propTypes = {
     domain: PropTypes.string,
     children: PropTypes.element,
     noborder: PropTypes.bool,
+    inRow: PropTypes.bool,
 };

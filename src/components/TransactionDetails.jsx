@@ -2,105 +2,25 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import BigNumber from 'bignumber.js';
 import AssetCard2 from './AssetCard2';
+import OperationsMap from './OperationsMap';
 
-// operationsMap is modified code from Stellar Laboratory licensed under Apache-2.0
-// Interesting trivia: This was written by Iris Li in 2015 while at SDF
-const operationsMap = {
-    createAccount: {
-        name: 'createAccount',
-        label: 'Create Account',
-        helpNote: 'Creates and funds a new account with the specified starting balance.',
-        docsUrl: 'https://www.stellar.org/developers/learn/concepts/list-of-operations.html#create-account',
-    },
-    payment: {
-        name: 'payment',
-        label: 'Payment',
-        helpNote: 'Sends an amount in a specific asset to a destination account.',
-        docsUrl: 'https://www.stellar.org/developers/learn/concepts/list-of-operations.html#payment',
-    },
-    pathPayment: {
-        name: 'pathPayment',
-        label: 'Path Payment',
-        helpNote:
-            'Sends an amount in a specific asset to a destination account through a path of offers. This allows the asset sent (e.g., 450 XLM) to be different from the asset received (e.g, 6 BTC).',
-        docsUrl: 'https://www.stellar.org/developers/learn/concepts/list-of-operations.html#path-payment',
-    },
-    manageOffer: {
-        name: 'manageOffer',
-        label: 'Manage Offer',
-        helpNote: 'Creates, updates, or deletes an offer.',
-        docsUrl: 'https://www.stellar.org/developers/learn/concepts/list-of-operations.html#manage-offer',
-    },
-    createPassiveOffer: {
-        name: 'createPassiveOffer',
-        label: 'Create Passive Offer',
-        helpNote: 'Creates an offer that does not take another offer of equal price when created.',
-        docsUrl: 'https://www.stellar.org/developers/learn/concepts/list-of-operations.html#create-passive-offer',
-    },
-    setOptions: {
-        name: 'setOptions',
-        label: 'Set Options',
-        helpNote: 'Sets various configuration options for an account.',
-        docsUrl: 'https://www.stellar.org/developers/learn/concepts/list-of-operations.html#set-options',
-    },
-    changeTrust: {
-        name: 'changeTrust',
-        label: 'Change Trust',
-        helpNote: 'Creates, updates, or deletes a trustline.',
-        docsUrl: 'https://www.stellar.org/developers/learn/concepts/list-of-operations.html#change-trust',
-    },
-    allowTrust: {
-        name: 'allowTrust',
-        label: 'Allow Trust',
-        helpNote: 'Updates the authorized flag of an existing trustline.',
-        docsUrl: 'https://www.stellar.org/developers/learn/concepts/list-of-operations.html#allow-trust',
-    },
-    accountMerge: {
-        name: 'accountMerge',
-        label: 'Account Merge',
-        helpNote:
-            'Transfers the native balance (the amount of XLM an account holds) to another account and removes the source account from the ledger.',
-        docsUrl: 'https://www.stellar.org/developers/learn/concepts/list-of-operations.html#account-merge',
-    },
-    inflation: {
-        name: 'inflation',
-        label: 'Inflation',
-        helpNote: 'Runs the weekly inflation',
-        docsUrl: 'https://www.stellar.org/developers/learn/concepts/list-of-operations.html#inflation',
-    },
-    manageData: {
-        name: 'manageData',
-        label: 'Manage Data',
-        helpNote: 'Sets, modifies, or deletes a Data Entry (name/value pair).',
-        docsUrl: 'https://www.stellar.org/developers/learn/concepts/list-of-operations.html#manage-data',
-    },
-};
+export default class TransactionDetails extends React.Component {
+    static generateTableRow(label, content) {
+        return (
+            <div key={`${label}_key`} className="Details_row">
+                <div className="Details_row_label">{label}</div>
+                <div className="Details_row_content">{content}</div>
+            </div>
+        );
+    }
 
-export default function TransactionSummary(props) {
-    const ops = [];
-    const tx = props.tx;
-
-    for (let i = 0; i < tx.operations.length; i++) {
-        const op = tx.operations[i];
+    static getOperationAttr(op) {
         const attributes = [];
 
-        let label = operationsMap[op.type].label;
-        if (op.type === 'changeTrust') {
-            if (op.limit === '0') {
-                label = 'Remove Asset';
-            } else if (op.limit === '922337203685.4775807') {
-                label = 'Accept Asset';
-            }
-        }
-
-        if (op.type === 'manageOffer') {
-            if (op.amount === '0') {
-                label = 'Delete Offer';
-            }
-        }
-
-        for (const attr in op) {
+        Object.keys(op).forEach((attr) => {
             const value = op[attr];
+            console.log(`value ${attr}`);
+
             if (attr === 'type') {
                 // no-op
             } else if (attr === 'limit') {
@@ -109,11 +29,7 @@ export default function TransactionSummary(props) {
                 let displayValue;
                 let hide = false;
                 if (value.code !== undefined) {
-                    displayValue = (
-                        <div className="TransactionSummary__row__content__inline__content__assetCard">
-                            <AssetCard2 code={value.code} issuer={value.issuer} />
-                        </div>
-                    );
+                    displayValue = <AssetCard2 code={value.code} issuer={value.issuer} inRow />;
                 } else if (value === '922337203685.4775807') {
                     // 2^63-1, the max number in Stellar, 64-bit fixed int
                     displayValue = 'maximum'; // Hmm, is this even used anywhere?
@@ -153,63 +69,80 @@ export default function TransactionSummary(props) {
                     }
                 }
             }
+        });
+
+        return attributes;
+    }
+
+    static getOperationLabel(op) {
+        switch (op.type) {
+        case 'changeTrust':
+            return op.limit === '0' ? 'Remove Asset' : 'Accept Asset';
+        case 'manageOffer':
+            return op.amount === '0' ? 'Delete Offer' : null;
+        default:
+            break;
         }
+        return OperationsMap[op.type].label;
+    }
 
-        ops.push(
-            <div key={`table_op${i}`} className="TransactionSummary__row">
-                <div className="TransactionSummary__row__label">{label}</div>
-                <div className="TransactionSummary__row__content">
-                    {attributes.map(attribute => (
-                        <article key={attribute.key} className="TransactionSummary__row__content__inline">
-                            {attribute.name ? (
-                                <p className="TransactionSummary__row__content__inline__title">{attribute.name}</p>
-                            ) : null}
-                            <div className="TransactionSummary__row__content__inline__content">{attribute.display}</div>
+    getOperations() {
+        const { tx } = this.props;
+        const operations = [];
+
+        tx.operations.forEach((op) => {
+            const attributes = this.constructor.getOperationAttr(op);
+            const label = this.constructor.getOperationLabel(op);
+
+            operations.push(
+                this.constructor.generateTableRow(
+                    label,
+                    attributes.map(attribute => (
+                        <article key={attribute.key}>
+                            {attribute.name ? <span className="Inline_title">{attribute.name}</span> : null}
+                            <div className="Inline_content">{attribute.display}</div>
                         </article>
-                    ))}
-                </div>
-            </div>,
+                    )),
+                ),
+            );
+        });
+
+        return operations;
+    }
+
+    getMemo() {
+        const { tx } = this.props;
+
+        return tx.memo._type === 'none' ? (
+            <span className="Content_light">No memo</span>
+        ) : (
+            <React.Fragment>
+                <p className="Inline_title">{tx.memo._type}</p>
+                <div className="Inline_content">{tx.memo._value}</div>
+            </React.Fragment>
         );
     }
 
-    let memo;
-    if (tx.memo._type === 'none') {
-        memo = <em className="TransactionSummary__row__content__light">none</em>;
-    } else {
-        memo = (
-            <article className="TransactionSummary__row__content__inline">
-                <p className="TransactionSummary__row__content__inline__title">{tx.memo._type}</p>
-                <div className="TransactionSummary__row__content__inline__content">{tx.memo._value}</div>
-            </article>
+    render() {
+        const { tx } = this.props;
+
+        const networkFeeString = `${new BigNumber(tx.fee).dividedBy(10000000).toString()} XLM ${
+            tx.fee <= 100 ? '(≈$0.00)' : ''
+        }`;
+
+        return (
+            <div className="TransactionDetails">
+                {this.constructor.generateTableRow('Source', tx.source)}
+                {this.constructor.generateTableRow('Sequence', tx.sequence)}
+                {this.getOperations()}
+                {this.constructor.generateTableRow('Network Fee', networkFeeString)}
+                {this.constructor.generateTableRow('Memo', this.getMemo())}
+            </div>
         );
     }
-
-    return (
-        <div className="TransactionSummary">
-            <div key="table_source" className="TransactionSummary__row TransactionSummary__row--first">
-                <div className="TransactionSummary__row__label">Source</div>
-                <div className="TransactionSummary__row__content">{tx.source}</div>
-            </div>
-            <div key="table_sequence" className="TransactionSummary__row">
-                <div className="TransactionSummary__row__label">Sequence</div>
-                <div className="TransactionSummary__row__content">{tx.sequence}</div>
-            </div>
-            {ops}
-            <div key="table_fee" className="TransactionSummary__row">
-                <div className="TransactionSummary__row__label">Network Fee</div>
-                <div className="TransactionSummary__row__content">
-                    {new BigNumber(tx.fee).dividedBy(10000000).toString()} XLM{' '}
-                    <strong>{tx.fee <= 100 ? '(~$0.00)' : ''}</strong>
-                </div>
-            </div>
-            <div key="table_memo" className="TransactionSummary__row">
-                <div className="TransactionSummary__row__label">Memo</div>
-                <div className="TransactionSummary__row__content">{memo}</div>
-            </div>
-        </div>
-    );
 }
 
-TransactionSummary.propTypes = {
+TransactionDetails.propTypes = {
+    // TODO: Valid proptype
     tx: PropTypes.string.isRequired,
 };
