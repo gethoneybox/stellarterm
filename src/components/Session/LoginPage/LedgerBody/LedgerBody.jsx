@@ -19,7 +19,7 @@ export default class LedgerBody extends React.Component {
 
     render() {
         const d = this.props.d;
-        const ledgerConnected = d.session.ledgerConnected;
+        const { ledgerConnected } = d.session;
         const isNotChrome = !this.constructor.browserIsGoogleChrome();
         const isHttp = this.constructor.isHttpConnectionUsed();
         let loginForm;
