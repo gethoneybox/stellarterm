@@ -62,14 +62,28 @@ export default function AssetCard2(props) {
         borderStyle = { border: 'none' };
     }
 
+    let currency;
+    let hostName;
+
+    if (props.currency && props.host) {
+        currency = props.currency;
+        hostName = props.host;
+    } else {
+        const unknownAssetsData = JSON.parse(localStorage.getItem('unknownAssetsData')) || [];
+        const assetData = unknownAssetsData.filter(assetLocalItem => (
+            assetLocalItem.code === props.code && assetLocalItem.issuer === props.issuer
+        ))[0] || {};
+        currency = assetData.currency;
+        hostName = assetData.host;
+    }
+
     let { logo, name } = anchor;
     let logoPadding = false;
 
-    if (name === 'unknown' && props.currency) {
-        const { image, host } = props.currency;
-
+    if (name === 'unknown' && currency && hostName) {
+        const { image, host } = currency;
         const domain = host && host.split('//')[1];
-        name = domain || props.host;
+        name = domain || hostName;
         logo = image || logo;
         logoPadding = !!image;
     }

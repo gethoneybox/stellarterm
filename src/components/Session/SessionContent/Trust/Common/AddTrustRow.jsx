@@ -19,7 +19,9 @@ export default function AddTrustRow(props) {
                 d={props.d}
                 asset={props.asset}
                 message={`${props.asset.getCode()} accepted`}
-                trustMessage={`Accept ${props.asset.getCode()}`} />
+                trustMessage={`Accept ${props.asset.getCode()}`}
+                currency={props.currency}
+                host={props.host} />
         </div>
     );
 }
