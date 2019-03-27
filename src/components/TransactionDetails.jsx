@@ -19,7 +19,6 @@ export default class TransactionDetails extends React.Component {
 
         Object.keys(op).forEach((attr) => {
             const value = op[attr];
-            console.log(`value ${attr}`);
 
             if (attr === 'type') {
                 // no-op

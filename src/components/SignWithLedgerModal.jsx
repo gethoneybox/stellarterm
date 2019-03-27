@@ -31,16 +31,26 @@ export default class GlobalModal extends React.Component {
 
     getTransactionStatus() {
         const d = this.props.d;
-        console.log(this.state);
 
         const { error, result } = this.state;
         const waitingForConfirm = error === undefined && result === undefined;
+        console.log(this.state.result);
 
         return (
             <div className="LedgerPopup_footer">
                 <div className="Footer_transaction">
-                    <img src={images['icon-circle-preloader-gif']} alt="preloader" />
-                    {result ? <span>Waiting for Horizon answer</span> : <span>Waiting for your confirmation</span>}
+                    {waitingForConfirm ? (
+                        <React.Fragment>
+                            <img src={images['icon-circle-preloader-gif']} alt="preloader" />{' '}
+                            <span>Waiting for your confirmation</span>
+                        </React.Fragment>
+                    ) : null}
+
+                    {error ? (
+                        <React.Fragment>
+                            <img src={images['icon-circle-fail']} alt="preloader" /> <span>{error}</span>
+                        </React.Fragment>
+                    ) : null}
                 </div>
 
                 <div className="Action_buttons">
@@ -90,6 +100,7 @@ export default class GlobalModal extends React.Component {
 
     render() {
         const d = this.props.d;
+        const transactionStatus = this.getTransactionStatus();
 
         return (
             <div className="GlobalModal">
@@ -102,7 +113,7 @@ export default class GlobalModal extends React.Component {
                     </div>
                     <TransactionDetails tx={d.modal.inputData} />
 
-                    {this.getTransactionStatus()}
+                    {transactionStatus}
                 </div>
             </div>
         );
