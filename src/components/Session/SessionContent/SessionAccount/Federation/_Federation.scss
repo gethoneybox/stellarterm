@@ -9,9 +9,9 @@
     padding-bottom: 0px;
 
     .alert_isEditing {
-        outline: auto 2px #7ed085;
+        box-shadow: 0 0 1px 1px hsl(125, 47%, 68%);
     }
-  
+
     .Account_alert {
         button {
             width: 108px;

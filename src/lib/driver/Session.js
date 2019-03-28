@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 import MagicSpoon from '../MagicSpoon';
 import Event from '../Event';
-import * as request from '../request';
+import * as request from '../api/request';
 import * as EnvConsts from '../../env-consts';
 
 const StellarLedger = window.StellarLedger;
@@ -16,7 +16,6 @@ export default function Send(driver) {
 
         this.setupLedgerError = null; // Could connect but couldn't reach address
         this.ledgerConnected = false;
-        this.federationError = null;
 
         this.unfundedAccountId = '';
         this.inflationDone = false;
@@ -294,8 +293,8 @@ export default function Send(driver) {
         getJwtToken: () => {
             const userPublicKey = this.account.accountId();
             const jwtToken = {
-                getChallengeUrl: `${EnvConsts.STELLARTERM_API_URL}api/authentication/?account=${userPublicKey}`,
-                getTokenUrl: `${EnvConsts.STELLARTERM_API_URL}api/authentication/`,
+                getChallengeUrl: `${EnvConsts.FEDERATION_API_URL}api/authentication/?account=${userPublicKey}`,
+                getTokenUrl: `${EnvConsts.FEDERATION_API_URL}api/authentication/`,
             };
             const headers = { 'Content-Type': 'application/json' };
 
@@ -312,37 +311,30 @@ export default function Send(driver) {
                 .then((res) => {
                     this.jwtToken = res.token;
                 })
-                .catch((e) => {
-                    this.federationError = e.data.error;
-                });
+                .catch(e => e.data.error);
         },
 
         setFederation: async (fedName) => {
-            this.federationError = null;
             if (this.jwtToken === null) {
                 await this.handlers.getJwtToken();
             }
 
             const federation = {
-                fedUrl: `${EnvConsts.STELLARTERM_API_URL}federation/manage/`,
+                fedUrl: `${EnvConsts.FEDERATION_API_URL}federation/manage/`,
             };
             const headers = { 'Content-Type': 'application/json', Authorization: `JWT ${this.jwtToken}` };
 
             const body = JSON.stringify({ name: fedName });
             const reqType = this.userFederation === '' ? request.post : request.patch;
-
-            return reqType(federation.fedUrl, { headers, body })
-                .then((res) => {
-                    this.userFederation = res.name.split('*')[0];
-                })
-                .catch((e) => {
-                    this.federationError = e.data.name;
-                });
+            const reqRes = await reqType(federation.fedUrl, { headers, body }).then((res) => {
+                this.userFederation = res.name.split('*')[0];
+            });
+            return reqRes;
         },
 
         searchFederation: (userPublicKey) => {
             const federation = {
-                fedUrl: `${EnvConsts.STELLARTERM_API_URL}federation/?q=${userPublicKey}&type=id`,
+                fedUrl: `${EnvConsts.FEDERATION_API_URL}federation/?q=${userPublicKey}&type=id`,
             };
             const headers = { 'Content-Type': 'application/json' };
 
@@ -351,9 +343,7 @@ export default function Send(driver) {
                 .then((res) => {
                     this.userFederation = res.stellar_address.split('*')[0];
                 })
-                .catch((e) => {
-                    this.federationError = e.data.error;
-                });
+                .catch(e => e.data);
         },
 
         setInflation: async (destination) => {

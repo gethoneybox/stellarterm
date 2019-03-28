@@ -31,8 +31,9 @@ export default class FederationInpit extends React.Component {
                     value={inputValue}
                     onChange={e => this.handleInput(e)}
                     onFocus={(e) => {
+                        const preValue = e.target.value;
                         e.target.value = '';
-                        e.target.value = e.target.value;
+                        e.target.value = preValue;
                     }} />
                 <span>*stellarterm.com</span>
             </div>

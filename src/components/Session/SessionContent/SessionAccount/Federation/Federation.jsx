@@ -4,82 +4,96 @@ import images from '../../../../../images';
 import FederationInpit from './FederationInput/FederationInput';
 import CopyButton from '../../../../CopyButton';
 import Driver from '../../../../../lib/Driver';
+import Ellipsis from '../../../../Ellipsis';
 
 export const MIN_FED_LENGTH = 4;
 
 export default class Federation extends React.Component {
     constructor(props) {
         super(props);
-        const { userFederation, federationError } = this.props.d.session;
 
         this.state = {
             isEditing: false,
-            fedError: federationError,
-            address: userFederation,
+            fedError: null,
+            address: this.props.d.session.userFederation,
+            reqIsResolved: true,
         };
     }
 
-    componentWillUnmount() {
-        this.props.d.session.federationError = null;
+    getControlButtons() {
+        const { reqIsResolved, address, fedError } = this.state;
+        const { userFederation } = this.props.d.session;
+        const disableSaveButton =
+            address.length < MIN_FED_LENGTH || address === userFederation || fedError !== null || !reqIsResolved;
+
+        return !reqIsResolved ? (
+            <button className="s-button" onClick={() => this.handleBtnSave()} disabled={disableSaveButton}>
+                Saving
+                <Ellipsis />
+            </button>
+        ) : (
+            <React.Fragment>
+                <button className="b_transparent" onClick={() => this.handleEditToggle()}>
+                    Cancel
+                </button>
+                <button className="s-button" onClick={() => this.handleBtnSave()} disabled={disableSaveButton}>
+                    Save
+                </button>
+            </React.Fragment>
+        );
     }
 
     getContent() {
         const { isEditing, address } = this.state;
-        const { userFederation } = this.props.d.session;
-        const disableSaveButton = address.length < MIN_FED_LENGTH || address === userFederation;
+        const alertClass = `Account_alert ${isEditing ? 'alert_isEditing' : ''}`;
         const fedExists = address !== '';
 
-        let leftFedBlock;
-        let rightControlBlock;
+        let content;
 
         if (isEditing) {
-            leftFedBlock = (
-                <React.Fragment>
-                    <p>New federation address</p>
-                    <FederationInpit address={address} onUpdate={inputValue => this.updateInputValue(inputValue)} />
-                </React.Fragment>
-            );
-            rightControlBlock = (
-                <React.Fragment>
-                    <button className="b_transparent" onClick={() => this.handleEditToggle()}>
-                        Cancel
-                    </button>
-                    <button className="s-button" onClick={() => this.handleBtnSave()} disabled={disableSaveButton}>
-                        Save
-                    </button>
-                </React.Fragment>
+            content = (
+                <div className={alertClass}>
+                    <div className="Account_alert_left">
+                        <p>New federation address</p>
+                        <FederationInpit address={address} onUpdate={inputValue => this.updateInputValue(inputValue)} />
+                    </div>
+                    <div className="Account_alert_right">{this.getControlButtons()}</div>
+                </div>
             );
         } else if (fedExists && !isEditing) {
-            leftFedBlock = (
-                <React.Fragment>
-                    <p>Your StellarTerm federation address</p>
-                    <strong onClick={() => this.handleEditToggle()}>{`${address}*stellarterm.com`}</strong>
-                </React.Fragment>
-            );
-            rightControlBlock = (
-                <React.Fragment>
-                    <div className="CopyButton" onClick={() => this.handleEditToggle()}>
-                        <img src={images['icon-edit']} alt="edit" width="24" height="24" />
-                        <span>EDIT</span>
+            content = (
+                <div className={alertClass}>
+                    <div className="Account_alert_left">
+                        <p>Your StellarTerm federation address</p>
+                        <strong onClick={() => this.handleEditToggle()}>{`${address}*stellarterm.com`}</strong>
                     </div>
-                    <CopyButton text={`${address}*stellarterm.com`} />
-                </React.Fragment>
+
+                    <div className="Account_alert_right">
+                        <div className="CopyButton" onClick={() => this.handleEditToggle()}>
+                            <img src={images['icon-edit']} alt="edit" width="24" height="24" />
+                            <span>EDIT</span>
+                        </div>
+                        <CopyButton text={`${address}*stellarterm.com`} />
+                    </div>
+                </div>
             );
         } else if (!fedExists && !isEditing) {
-            leftFedBlock = <p className="no_federation_text">StellarTerm federation address</p>;
-            rightControlBlock = (
-                <button className="s-button" onClick={() => this.handleEditToggle()}>
-                    Enable
-                </button>
+            content = (
+                <div className={alertClass}>
+                    <div className="Account_alert_left">
+                        <p className="no_federation_text">StellarTerm federation address</p>
+                    </div>
+
+                    <div className="Account_alert_right">
+                        <button className="s-button" onClick={() => this.handleEditToggle()}>
+                            Enable
+                        </button>
+                    </div>
+                </div>
             );
         }
 
-        return (
-            <div className={`Account_alert ${isEditing ? 'alert_isEditing' : ''}`}>
-                <div className="Account_alert_left">{leftFedBlock}</div>
-                <div className="Account_alert_right">{rightControlBlock}</div>
-            </div>
-        );
+        return content;
     }
 
     getErrorBlock() {
@@ -98,13 +112,13 @@ export default class Federation extends React.Component {
     updateInputValue(inputValue) {
         this.setState({
             address: inputValue,
+            fedError: null,
         });
     }
 
     handleEditToggle() {
         const { userFederation } = this.props.d.session;
 
-        this.props.d.session.federationError = null;
         this.setState({
             isEditing: !this.state.isEditing,
             address: userFederation,
@@ -114,15 +128,25 @@ export default class Federation extends React.Component {
 
     handleBtnSave() {
         const { handlers } = this.props.d.session;
-
-        handlers.setFederation(this.state.address).then(() => {
-            const { federationError, userFederation } = this.props.d.session;
-            this.setState({
-                isEditing: federationError !== null,
-                fedError: federationError,
-                address: userFederation,
-            });
+        this.setState({
+            reqIsResolved: false,
         });
+        handlers
+            .setFederation(this.state.address)
+            .then(() => {
+                const { userFederation } = this.props.d.session;
+                this.setState({
+                    isEditing: this.state.fedError !== null,
+                    address: userFederation,
+                    reqIsResolved: true,
+                });
+            })
+            .catch((e) => {
+                this.setState({
+                    fedError: e.data !== undefined ? e.data.name : 'Federations error occured! Please try later.',
+                    reqIsResolved: true,
+                });
+            });
     }
 
     render() {

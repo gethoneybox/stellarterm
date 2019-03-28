@@ -34,21 +34,19 @@ gulp.task('styles', () => gulp.src('./src/styles/**/*.scss')
 
 // Images (For big images that get turned into base64)
 gulp.task('images', (cb) => {
-    let file = 'let images = {\n';
+    let imagesCollection = fs
+        .readdirSync('./images/')
+        .reduce((collection, fileName) => {
+            const [name, extension] = fileName.split('.');
 
-    fs.readdirSync('./images/').forEach((imgFile) => {
-        const imageObj = {
-            name: imgFile.split('.')[0],
-            ext: imgFile.split('.').pop(),
-        };
+            const mimeType = extension === 'jpg' ? 'jpeg' : extension;
+            const file = fs.readFileSync(`./images/${fileName}`);
+            const b64 = Buffer.from(file).toString('base64');
+            return `${collection}    '${name}': 'data:image/${mimeType};base64, ${b64}',\n`;
+        }, 'const images = {\n');
 
-        const mimeType = imageObj.ext === 'jpg' ? 'jpeg' : imageObj.ext;
-        const b64 = new Buffer(fs.readFileSync(`./images/${imgFile}`)).toString('base64');
-        file += `  '${imageObj.name}': 'data:image/${mimeType};base64, ${b64}',\n`;
-    });
-
-    file += '};\nmodule.exports = images;';
-    fs.writeFile('./src/images.js', file, cb);
+    imagesCollection += '};\nmodule.exports = images;\n';
+    fs.writeFile('./src/images.js', imagesCollection, cb);
 });
 
 
@@ -164,7 +162,7 @@ gulp.task('buildBundle', ['styles', 'buildScripts', 'moveLibraries'], () => gulp
     .pipe(gulp.useref())
     .pipe(gulp.dest('dist')));
 
-const baseTasks = ['html', 'styles', 'customConfig', 'buildInfo', 'images', 'scripts', 'copyBower'];
+const baseTasks = ['html', 'styles', 'customConfig', 'buildInfo', 'images', 'scripts', 'copyBower', 'copyStaticFiles'];
 
 // Watch
 gulp.task('watch', baseTasks, () => {
@@ -210,6 +208,9 @@ gulp.task('css-reload', ['styles'], bsReload);
 gulp.task('copyBower', () => gulp.src('bower_components/**/*')
     .pipe(gulp.dest('dist/bower_components/')));
 
+gulp.task('copyStaticFiles', () => gulp.src('static/**/*', { dot: true })
+    .pipe(gulp.dest('dist/')));
+
 // Build production site.
 gulp.task('uglify-js', () => gulp.src('dist/scripts/app.js')
     .pipe($.uglify())
@@ -219,9 +220,6 @@ gulp.task('inlinesource', () => gulp.src('./dist/index.html')
     .pipe($.inlineSource())
     .pipe(gulp.dest('./dist/')));
 
-gulp.task('copyStaticFiles', () => gulp.src('static/**/*', { dot: true })
-    .pipe(gulp.dest('dist/')));
-
 gulp.task('production', () => {
     process.env.NODE_ENV = 'production';
     runSequence(
@@ -229,7 +227,6 @@ gulp.task('production', () => {
         'configEnv',
         'buildDirectory',
         baseTasks,
-        'copyStaticFiles',
         'uglify-js',
         'inlinesource'
         , () => {
